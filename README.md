@@ -12,7 +12,7 @@ This is Tensorflow/Keras implementation of our ICLR 2019 paper.
 If you use this work, please cite:
 
     @inproceedings{Savinov2019_EC,
-        Author = {Nikolay Savinov and Anton Raichuk and Damien Vincent and Raphaël Marinier and Marc Pollefeys and Timothy Lillicrap and Sylvain Gelly},
+        Author = {Savinov, Nikolay and Raichuk, Anton and Marinier, Rapha{\"e}l and Vincent, Damien and Pollefeys, Marc and Lillicrap, Timothy and Gelly, Sylvain},
         Title = {Episodic Curiosity through Reachability},
         Booktitle = {International Conference on Learning Representations ({ICLR})},
         Year = {2019}
