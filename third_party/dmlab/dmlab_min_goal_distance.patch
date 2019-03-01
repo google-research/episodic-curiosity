@@ -1,0 +1,131 @@
+# Copyright (C) 2016 Google Inc.
+# Copyright (C) 2018 Google Inc.
+# Copyright (C) 2019 Google Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+diff --git a/deepmind/engine/lua_maze_generation.cc b/deepmind/engine/lua_maze_generation.cc
+index 8c1b9a9..23c08f7 100644
+--- a/deepmind/engine/lua_maze_generation.cc
++++ b/deepmind/engine/lua_maze_generation.cc
+@@ -242,6 +242,8 @@ lua::NResultsOr LuaMazeGeneration::CreateRandom(lua_State* L) {
+ 
+   maze_generation::TextMaze maze(maze_generation::Size{height, width});
+ 
++  table.LookUp("minGoalDistance", &maze.min_goal_distance_);
++
+   // Create random rooms.
+   maze_generation::SeparateRectangleParams params{};
+   params.min_size = maze_generation::Size{room_min_size, room_min_size};
+@@ -602,6 +604,14 @@ lua::NResultsOr LuaMazeGeneration::VisitRandomPath(lua_State* L) {
+   return 1;
+ }
+ 
++lua::NResultsOr LuaMazeGeneration::MinGoalDistance(lua_State* L) {
++  if (lua_gettop(L) != 1) {
++    return "[MinGoalDistance] - No args expected";
++  }
++  lua::Push(L, text_maze_.min_goal_distance_);
++  return 1;
++}
++
+ // Registers classes metatable with Lua.
+ // [0, 0, -]
+ void LuaMazeGeneration::Register(lua_State* L) {
+@@ -625,6 +635,7 @@ void LuaMazeGeneration::Register(lua_State* L) {
+       {"fromWorldPos", Class::Member<&LuaMazeGeneration::FromWorldPos>},
+       {"visitFill", Class::Member<&LuaMazeGeneration::VisitFill>},
+       {"visitRandomPath", Class::Member<&LuaMazeGeneration::VisitRandomPath>},
++      {"minGoalDistance", Class::Member<&LuaMazeGeneration::MinGoalDistance>},
+   };
+   Class::Register(L, regs);
+   LuaRoom::Register(L);
+diff --git a/deepmind/engine/lua_maze_generation.h b/deepmind/engine/lua_maze_generation.h
+index 5e83253..a2915f2 100644
+--- a/deepmind/engine/lua_maze_generation.h
++++ b/deepmind/engine/lua_maze_generation.h
+@@ -196,6 +196,9 @@ class LuaMazeGeneration : public lua::Class<LuaMazeGeneration> {
+   // [1, 1, e]
+   lua::NResultsOr CountVariations(lua_State* L);
+ 
++  // Minimum distance between a player spawn and a goal.
++  lua::NResultsOr MinGoalDistance(lua_State* L);
++
+   maze_generation::TextMaze text_maze_;
+ 
+   static std::uint64_t mixer_seq_;
+diff --git a/deepmind/level_generation/text_maze_generation/text_maze.cc b/deepmind/level_generation/text_maze_generation/text_maze.cc
+index cc5234e..0d50b12 100644
+--- a/deepmind/level_generation/text_maze_generation/text_maze.cc
++++ b/deepmind/level_generation/text_maze_generation/text_maze.cc
+@@ -22,7 +22,7 @@ namespace deepmind {
+ namespace lab {
+ namespace maze_generation {
+ 
+-TextMaze::TextMaze(Size extents) : area_{{0, 0}, extents} {
++TextMaze::TextMaze(Size extents) : area_{{0, 0}, extents}, min_goal_distance_(0) {
+   std::string level_layer(area_.size.height * (area_.size.width + 1), '*');
+   std::string variations_layer(area_.size.height * (area_.size.width + 1), '.');
+   for (int i = 0; i < area_.size.height; ++i) {
+diff --git a/deepmind/level_generation/text_maze_generation/text_maze.h b/deepmind/level_generation/text_maze_generation/text_maze.h
+index 6b32a6d..bb7396c 100644
+--- a/deepmind/level_generation/text_maze_generation/text_maze.h
++++ b/deepmind/level_generation/text_maze_generation/text_maze.h
+@@ -242,6 +242,9 @@ class TextMaze {
+   Rectangle area_;
+   std::array<std::string, 2> text_;
+   std::vector<unsigned int> ids_;
++
++ public:
++  int min_goal_distance_;
+ };
+ 
+ }  // namespace maze_generation
+diff --git a/game_scripts/factories/explore/factory.lua b/game_scripts/factories/explore/factory.lua
+index 2352483..57e759d 100644
+--- a/game_scripts/factories/explore/factory.lua
++++ b/game_scripts/factories/explore/factory.lua
+@@ -69,6 +69,7 @@ function factory.createLevelApi(kwargs)
+     kwargs.opts.quickRestart = true
+   end
+   kwargs.opts.randomSeed = false
++  kwargs.opts.minGoalDistance = kwargs.opts.minGoalDistance or 0
+   kwargs.opts.roomCount = kwargs.opts.roomCount or 4
+   kwargs.opts.roomMaxSize = kwargs.opts.roomMaxSize or 5
+   kwargs.opts.roomMinSize = kwargs.opts.roomMinSize or 3
+@@ -115,6 +116,7 @@ function factory.createLevelApi(kwargs)
+         roomMinSize = kwargs.opts.roomMinSize,
+         roomMaxSize = kwargs.opts.roomMaxSize,
+         extraConnectionProbability = kwargs.opts.extraConnectionProbability,
++        minGoalDistance = kwargs.opts.minGoalDistance,
+     }
+ 
+     if kwargs.opts.decalScale and kwargs.opts.decalScale ~= 1 then
+diff --git a/game_scripts/factories/explore/goal_locations_factory.lua b/game_scripts/factories/explore/goal_locations_factory.lua
+index d3dd9bb..86e7db5 100644
+--- a/game_scripts/factories/explore/goal_locations_factory.lua
++++ b/game_scripts/factories/explore/goal_locations_factory.lua
+@@ -31,9 +31,9 @@ function level:restart(maze)
+   local spawnLocations = {}
+   maze:visitFill{
+       cell = level._goalLocations[level._goalId],
+-      func = function(i, j)
++      func = function(i, j, distance)
+         local c = maze:getEntityCell(i, j)
+-        if c == 'P' then
++        if c == 'P' and distance >= maze:minGoalDistance() then
+           table.insert(spawnLocations, {i, j})
+         end
+       end
