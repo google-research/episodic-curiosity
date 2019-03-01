@@ -79,27 +79,14 @@ pip install -e .
 
 ### Resource requirements for training
 
-| Environment | Training   | Required GPU         | Recommended RAM            |
-:             : method     :                      :                            :
+| Environment | Training method | Required GPU         | Recommended RAM            |
 | ----------- | ---------- | -------------------- | -------------------------- |
 | DMLab       | PPO        | No                   | 32GBs                      |
-| DMLab       | PPO + Grid | No                   | 32GBs                      |
-:             : Oracle     :                      :                            :
-| DMLab       | PPO + EC   | No                   | 32GBs                      |
-:             : using      :                      :                            :
-:             : already    :                      :                            :
-:             : trained    :                      :                            :
-:             : R-networks :                      :                            :
-| DMLab       | PPO + EC   | Yes, otherwise,      | 50GBs<br>Tip: reduce       |
-:             : with       : training is slower   : `dataset_buffer_size` for  :
-:             : R-network  : by >20x.<br>Required : using less RAM at the      :
-:             : training   : GPU RAM\: 5GBs       : expense of policy          :
-:             :            :                      : performance.               :
-| DMLab       | PPO + ECO  | Yes, otherwise,      | 80GBs<br>Tip: reduce       |
-:             :            : training is slower   : `observation_history_size` :
-:             :            : by >20x.<br>Required : for using less RAM, at the :
-:             :            : GPU RAM\: 5GBs       : expense of policy          :
-:             :            :                      : performance.               :
+| DMLab       | PPO + Grid Oracle | No                   | 32GBs                      |
+| DMLab       | PPO + EC using already trained R-networks   | No                   | 32GBs                      |
+| DMLab       | PPO + EC with R-network training   | Yes, otherwise, training is slower by >20x.<br>Required GPU RAM: 5GBs      | 50GBs<br>Tip: reduce  `dataset_buffer_size` for  using less RAM at the expense of policy performance.   |
+| DMLab       | PPO + ECO  | Yes, otherwise, raining is slower by >20x.<br>Required GPU RAM: 5GBs     | 80GBs<br>Tip: reduce `observation_history_size` for using less RAM, at the expense of policy performance      |
+
 
 ## Trained models
 
@@ -119,47 +106,31 @@ We plan to also release the pre-trained policies soon.
 
 ### On a single machine
 
-[scripts/launcher_scripts.py](https://github.com/google-research/episodic-curiosity/blob/master/scripts/launcher_scripts.py)
+[scripts/launcher_script.py](https://github.com/google-research/episodic-curiosity/blob/master/scripts/launcher_script.py)
 is the main entry point to reproduce the results of Table 1 in the
 [paper](https://arxiv.org/abs/1810.02274). For instance, the following command
 line launches training of the *PPO + EC* method on the *Sparse+Doors* scenario:
 
 ```sh
-python episodic_curiosity/scripts/launcher_scripts.py --workdir=/tmp/ec_workdir --method=ppo_plus_ec --scenarios=sparseplusdoors
+python episodic_curiosity/scripts/launcher_script.py --workdir=/tmp/ec_workdir --method=ppo_plus_ec --scenarios=sparseplusdoors
 ```
 
 Main flags:
 
-| Flag              | Descriptions                                |
-| :---------------- | :------------------------------------------ |
-| --method          | Solving method to use, corresponds to the   |
-:                   : rows in table 1 of the                      :
-:                   : [paper](https\://arxiv.org/abs/1810.02274). :
-:                   : Possible values\: `ppo, ppo_plus_ec,        :
-:                   : ppo_plus_eco, ppo_plus_grid_oracle`         :
-| --scenario        | Scenario to launch. Corresponds to the      |
-:                   : columns in table 1 of the                   :
-:                   : [paper](https\://arxiv.org/abs/1810.02274). :
-:                   : Possible values\: `noreward,                :
-:                   : norewardnofire, sparse, verysparse,         :
-:                   : sparseplusdoors, dense1, dense2`            :
-| --workdir         | Directory where logs and checkpoints will   |
-:                   : be stored.                                  :
-| --run_number      | Run number of the current run. This is used |
-:                   : to create an appropriate subdir in workdir. :
-| --r_networks_path | Only meaningful for the `ppo_plus_ec`       |
-:                   : method. Path to the root dir for            :
-:                   : pre-trained r networks. If specified, we    :
-:                   : train the policy using those pre-trained r  :
-:                   : networks. If not specified, we first        :
-:                   : generate the R network training data, train :
-:                   : the R network and then train the policy.    :
+| Flag | Descriptions |
+| :----------- | :--------- |
+| --method | Solving method to use, corresponds to the rows in table 1 of the [paper](https://arxiv.org/abs/1810.02274). Possible values: `ppo, ppo_plus_ec, ppo_plus_eco, ppo_plus_grid_oracle` |
+| --scenario | Scenario to launch. Corresponds to the columns in table 1 of the [paper](https://arxiv.org/abs/1810.02274). Possible values: `noreward, norewardnofire, sparse, verysparse, sparseplusdoors, dense1, dense2` |
+| --workdir | Directory where logs and checkpoints will be stored.  |
+| --run_number | Run number of the current run. This is used to create an appropriate subdir in workdir.  |
+| --r_networks_path | Only meaningful for the `ppo_plus_ec` method. Path to the root dir for pre-trained r networks.  If specified, we train the policy using those pre-trained r networks. If not specified, we first generate the R network training data, train the R network and then train the policy. |
+
 
 Training takes a couple of days. We used CPUs with 16 hyper-threads, but smaller
 CPUs should do.
 
 Under the hood,
-[launcher_scripts.py](https://github.com/google-research/episodic-curiosity/blob/master/scripts/launcher_scripts.py)
+[launcher_script.py](https://github.com/google-research/episodic-curiosity/blob/master/scripts/launcher_script.py)
 launches
 [train_policy.py](https://github.com/google-research/episodic-curiosity/blob/master/episodic_curiosity/train_policy.py)
 with the right hyperparameters. For the method `ppo_plus_ec`, it first launches
@@ -206,30 +177,17 @@ organized as follows:
 
 | File or Directory                          | Description                     |
 | :----------------------------------------- | :------------------------------ |
-| `r_training_data/{R_TRAINING,VALIDATION}/` | TF Records with data generated  |
-:                                            : from a random policy for        :
-:                                            : R-network training. Only for    :
-:                                            : method `ppo_plus_ec` without    :
-:                                            : supplying pre-trained           :
-:                                            : R-networks.                     :
-| `r_networks/`                              | Keras checkpoints of trained    |
-:                                            : R-networks. Only for method     :
-:                                            : `ppo_plus_ec` without supplying :
-:                                            : pre-trained R-networks.         :
-| `reward_{train,valid,test}.csv`            | CSV files with                  |
-:                                            : {train,valid,test} rewards,     :
-:                                            : tracking the performance of the :
-:                                            : policy at multiple training     :
-:                                            : steps.                          :
+| `r_training_data/{R_TRAINING,VALIDATION}/` | TF Records with data generated from a random policy for R-network training. Only for method `ppo_plus_ec` without supplying pre-trained R-networks. |
+| `r_networks/`                              | Keras checkpoints of trained R-networks. Only for method `ppo_plus_ec` without supplying pre-trained R-networks. |
+| `reward_{train,valid,test}.csv`            | CSV files with {train,valid,test} rewards, tracking the performance of the policy at multiple training steps. |
 | `checkpoints/`                             | Checkpoints of the policy.      |
-| `log.txt`, `progress.csv`                  | Training logs and CSV from      |
-:                                            : OpenAI's PPO2 code.             :
+| `log.txt`, `progress.csv`                  | Training logs and CSV from OpenAI's PPO2 code. |
 
 On cloud, the workdir of each job will be synced to a cloud bucket directory of
 the form `<cloud_bucket_root>/<vm_id>/<method>/<scenario>/run_number_<d>/`.
 
 We provide a
-[colab](https://github.com/google-research/episodic-curiosity/blob/master/colab/plot_training_graphs.py)
+[colab](https://github.com/google-research/episodic-curiosity/blob/master/colab/plot_training_graphs.ipynb)
 to plot graphs during training of the policies, using data from the
 `reward_{train,valid,test}.csv` files.
 
