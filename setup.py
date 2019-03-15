@@ -56,6 +56,9 @@ setuptools.setup(
     author='Google LLC',
     author_email='opensource@google.com',
     install_requires=install_requires,
+    extras_require={
+        'video': ['sk-video'],
+    },
     license='Apache 2.0',
     keywords='reinforcement-learning curiosity exploration deepmind-lab',
 )

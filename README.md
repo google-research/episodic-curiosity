@@ -90,17 +90,28 @@ pip install -e .
 
 ## Trained models
 
-Trained R-networks can be found in the `episodic-curiosity` Google cloud bucket.
-You can access them via the
-[web interface](https://console.cloud.google.com/storage/browser/episodic-curiosity/r_networks),
+Trained R-networks and policies can be found in the
+`episodic-curiosity` Google cloud bucket. You can access them via the
+[web interface](https://console.cloud.google.com/storage/browser/episodic-curiosity),
 or copy them with the `gsutil` command from the
 [Google Cloud SDK](https://cloud.google.com/sdk):
 
 ```shell
-gsutil -m cp gs://episodic-curiosity/r_networks .
+gsutil -m cp -r gs://episodic-curiosity/r_networks .
+gsutil -m cp -r gs://episodic-curiosity/policies .
 ```
 
-We plan to also release the pre-trained policies soon.
+Example of command to visualize a trained policy with two episodes of
+1000 steps, and create videos similar to the ones at the top of this
+page:
+
+``` shell
+python -m episodic_curiosity.visualize_curiosity_reward --workdir=/tmp/ec_visualizations --r_net_weights=<path_to_r_network> --policy_path=<path_to_trained_policy> --alsologtostderr --num_episodes=2 --num_steps=1000 --visualization_type=surrogate_reward --trajectory_mode=do_nothing
+```
+
+This requires that you install extra dependencies for generating
+videos, with `pip install -e .[video]`
+
 
 ## Training
 

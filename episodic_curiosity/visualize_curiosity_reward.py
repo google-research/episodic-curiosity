@@ -32,8 +32,8 @@ from absl import logging
 from episodic_curiosity import curiosity_env_wrapper
 from episodic_curiosity import env_factory
 from episodic_curiosity import episodic_memory
+from episodic_curiosity import logging as ec_logging
 from episodic_curiosity import utils
-from episodic_curiosity.google import logging as ec_logging
 from third_party.baselines.ppo2 import policies
 from third_party.baselines.ppo2 import ppo2
 import gin
@@ -41,11 +41,6 @@ import gym
 import numpy as np
 import skimage.transform
 import tensorflow as tf
-
-from google3.learning.deepmind.xmanager2.client import xmanager_api
-import google3.learning.deepmind.xmanager2.client.google as xm
-from google3.pyglib import gfile
-
 
 FLAGS = flags.FLAGS
 
@@ -225,7 +220,7 @@ def build_video(trajectory_visualizations, episode_buffer,
     if visualization_type == 'surrogate_reward':
       obs_frame = skimage.transform.resize(obs[0], [
           LEVEL_MAZE_SIZE * CELL_SIZE_PIXELS, LEVEL_MAZE_SIZE * CELL_SIZE_PIXELS
-      ], mode='constant')
+      ], mode='constant', preserve_range=True)
       video_frame = np.concatenate((agent, memory, obs_frame), axis=1)
     else:
       video_frame = obs[0]
@@ -449,14 +444,11 @@ def load_policy(model_path, env):
 def main(argv):
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
-  xm.setup_work_unit()
-  if not gfile.Exists(FLAGS.workdir):
-    gfile.MakeDirs(FLAGS.workdir)
+  if not tf.gfile.Exists(FLAGS.workdir):
+    tf.gfile.MakeDirs(FLAGS.workdir)
   utils.dump_flags_to_file(os.path.join(FLAGS.workdir, 'flags.txt'))
   gin.bind_parameter('CuriosityEnvWrapper.scale_task_reward', 0.)
   gin.bind_parameter('CuriosityEnvWrapper.scale_surrogate_reward', 1.)
-  gin.bind_parameter('AntWrapper.enable_die_condition',
-                     FLAGS.ant_env_enable_die_condition)
   gin.parse_config_files_and_bindings(None,
                                       FLAGS.gin_bindings)
   # Hardware crashes with:
@@ -465,11 +457,9 @@ def main(argv):
   FLAGS.renderer = 'software'
 
   work_unit = None
-  if FLAGS.xm_xid != -1:
-    work_unit = xmanager_api.XManagerApi().get_current_work_unit()
 
   visualize_curiosity_reward(work_unit)
-  with gfile.GFile(os.path.join(FLAGS.workdir, 'gin_config.txt'), 'w') as f:
+  with tf.gfile.GFile(os.path.join(FLAGS.workdir, 'gin_config.txt'), 'w') as f:
     f.write(gin.operative_config_str())
 
 
