@@ -38,7 +38,7 @@ from third_party.keras_resnet import models
 import gin
 
 
-flags.DEFINE_string('vec_env_class', 'SubprocVecEnv',
+flags.DEFINE_string('vec_env_class', 'ThreadedVecEnv',
                     'Vec env class to use. '
                     '"SubprocVecEnv", "ThreadedVecEnv" are supported')
 
@@ -247,7 +247,7 @@ def create_environments(env_name,
   # which can lead to deadlock. See go/g3process. This is why you can use
   # ThreadedVecEnv.
   VecEnvClass = (subproc_vec_env.SubprocVecEnv
-                 if FLAGS.vec_env_class == 'vec_env_class'
+                 if FLAGS.vec_env_class == 'SubprocVecEnv'
                  else threaded_vec_env.ThreadedVecEnv)
 
   vec_env = VecEnvClass([
