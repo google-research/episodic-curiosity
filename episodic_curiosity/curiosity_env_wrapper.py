@@ -92,6 +92,7 @@ class CuriosityEnvWrapper(VecEnvWrapper):
                scale_task_reward = 1.0,
                scale_surrogate_reward = 0.0,
                append_ec_reward_as_channel = False,
+               bonus_reward_additive_term = 0,
                exploration_reward_min_step = 0,
                similarity_threshold = 0.5):
     if exploration_reward == 'episodic_curiosity':
@@ -113,6 +114,7 @@ class CuriosityEnvWrapper(VecEnvWrapper):
 
     VecEnvWrapper.__init__(self, vec_env, observation_space=observation_space)
 
+    self._bonus_reward_additive_term = bonus_reward_additive_term
     self._vec_episodic_memory = vec_episodic_memory
     self._observation_embedding_fn = observation_embedding_fn
     self._target_image_shape = target_image_shape
@@ -201,7 +203,8 @@ class CuriosityEnvWrapper(VecEnvWrapper):
         self._vec_episodic_memory[k].add(embedded_observations[k], infos[k])
     # Augment the reward with the exploration reward.
     bonus_rewards = [
-        0.0 if d else 0.5 - s for (s, d) in zip(similarity_to_memory, dones)
+        0.0 if d else 0.5 - s + self._bonus_reward_additive_term
+        for (s, d) in zip(similarity_to_memory, dones)
     ]
     bonus_rewards = np.array(bonus_rewards)
     return bonus_rewards

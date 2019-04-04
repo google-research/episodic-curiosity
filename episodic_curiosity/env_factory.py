@@ -305,7 +305,9 @@ def create_environments(env_name,
       curiosity_env_wrapper.CuriosityEnvWrapper(
           env, vec_episodic_memory, r_net.embed_observation,
           target_image_shape,
-          exploration_reward=('none' if is_atari_environment else 'oracle'),
+          exploration_reward=('none' if (is_atari_environment or
+                                         environment_engine == 'parkour')
+                              else 'oracle'),
           scale_task_reward=scale_task_reward_for_eval,
           scale_surrogate_reward=scale_surrogate_reward_for_eval)
       for env in [valid_env, test_env])

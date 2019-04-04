@@ -26,11 +26,12 @@ import gin
 class OracleExplorationReward(object):
   """Class that computes the ideal exploration bonus."""
 
-  def __init__(self, reward_grid_size=30.0):
+  def __init__(self, reward_grid_size=30.0, cell_reward_normalizer=900.0):
     """Creates a new oracle to compute the exploration reward.
 
     Args:
       reward_grid_size: Size of a cell that contains a unique reward.
+      cell_reward_normalizer: Denominator for computation of a cell reward
     """
     self._reward_grid_size = reward_grid_size
 
@@ -42,9 +43,7 @@ class OracleExplorationReward(object):
 
     # Somewhat normalize the exploration reward so that it is neither
     # too big or too small.
-    # Note: this is DMLab specific. This gives a reward of 1.0
-    # per cell when the grid_size is set to 30.
-    self._cell_reward /= (30.0 * 30.0)
+    self._cell_reward /= cell_reward_normalizer
 
     self.reset()
 

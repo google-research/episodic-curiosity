@@ -74,10 +74,14 @@ class PolicyEvaluator(object):
     self._eval_count += 1
 
     video_writer = DummyVideoWriter()
+    video_writer2 = DummyVideoWriter()
+    has_alternative_video = False
     if self._video_filename:
       video_filename = '{}_{}.mp4'.format(self._video_filename, global_step)
+      video_filename2 = '{}_{}_v2.mp4'.format(self._video_filename, global_step)
     else:
       video_filename = 'dummy.mp4'
+      video_filename2 = 'dummy2.mp4'
 
     # Initial state of the policy.
     # TODO(damienv): make the policy state dimension part of the constructor.
@@ -122,6 +126,13 @@ class PolicyEvaluator(object):
           video_writer.add(frame[:, :, 0])
         else:
           video_writer.add(frame)
+        if infos[0].get('frame:track') is not None:
+          has_alternative_video = True
+          frame = infos[0]['frame:track']
+          if self._grayscale:
+            video_writer2.add(frame[:, :, 0])
+          else:
+            video_writer2.add(frame)
 
     if self._metric_callback:
       self._metric_callback(np.mean(total_reward), global_step)
@@ -131,3 +142,5 @@ class PolicyEvaluator(object):
     if self._discrete_actions:
       print('Action distribution: {}'.format(action_distribution))
     video_writer.close(video_filename)
+    if has_alternative_video:
+      video_writer2.close(video_filename2)

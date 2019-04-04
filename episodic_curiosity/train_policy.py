@@ -114,6 +114,7 @@ def get_environment(env_name):
 def train(workdir, env_name, num_timesteps,
           nsteps=256,
           nminibatches=4,
+          noptepochs=4,
           learning_rate=2.5e-4,
           ent_coef=0.01):
   """Runs PPO training.
@@ -124,6 +125,7 @@ def train(workdir, env_name, num_timesteps,
     num_timesteps: for how many timesteps to run training
     nsteps: Number of consecutive environment steps to use during training.
     nminibatches: Minibatch size.
+    noptepochs: Number of optimization epochs.
     learning_rate: Initial learning rate.
     ent_coef: Entropy coefficient.
   """
@@ -150,6 +152,7 @@ def train(workdir, env_name, num_timesteps,
   logger.configure(logger_dir)
 
   env, valid_env, test_env = get_environment(env_name)
+  is_ant = env_name.startswith('parkour:')
 
   # Validation metric.
   policy_evaluator_on_valid = eval_policy.PolicyEvaluator(
@@ -174,7 +177,8 @@ def train(workdir, env_name, num_timesteps,
   cloud_sync_callback = lambda: None
 
   def evaluate_valid_test(model_step_fn, global_step):
-    policy_evaluator_on_valid.evaluate(model_step_fn, global_step)
+    if not is_ant:
+      policy_evaluator_on_valid.evaluate(model_step_fn, global_step)
     policy_evaluator_on_test.evaluate(model_step_fn, global_step)
 
   with tf.Session():
@@ -189,10 +193,10 @@ def train(workdir, env_name, num_timesteps,
     # performed.
 
     ppo2.learn(policy, env=env, nsteps=nsteps, nminibatches=nminibatches,
-               lam=0.95, gamma=0.99, noptepochs=4, log_interval=1,
+               lam=0.95, gamma=0.99, noptepochs=noptepochs, log_interval=1,
                ent_coef=ent_coef,
-               lr=lambda f: f * learning_rate,
-               cliprange=lambda f: f * 0.1,
+               lr=learning_rate if is_ant else lambda f: f * learning_rate,
+               cliprange=0.2 if is_ant else lambda f: f * 0.1,
                total_timesteps=int(num_timesteps * 1.1),
                train_callback=measurement_callback,
                eval_callback=evaluate_valid_test,
