@@ -38,7 +38,7 @@ from third_party.keras_resnet import models
 import gin
 
 
-flags.DEFINE_string('vec_env_class', 'ThreadedVecEnv',
+flags.DEFINE_string('vec_env_class', 'SubprocVecEnv',
                     'Vec env class to use. '
                     '"SubprocVecEnv", "ThreadedVecEnv" are supported')
 
