@@ -202,6 +202,12 @@ We provide a
 to plot graphs during training of the policies, using data from the
 `reward_{train,valid,test}.csv` files.
 
+### Related projects
+Check out the code for [Semi-parametric Topological Memory](
+https://github.com/nsavinov/SPTM), which uses graph-based episodic memory
+constructed from a short video to navigate in novel environments (thus providing
+exploitation policy, complementary to the exploration policy in this work).
+
 ### Known limitations
 
 -   As of 2019/02/20, `ppo_plus_eco` method is not robust to restarts, because
