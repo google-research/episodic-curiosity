@@ -36,8 +36,10 @@ import cv2
 
 FLAGS = flags.FLAGS
 
+DEFAULT_RENDERER = 'hardware'
+
 flags.DEFINE_enum(
-    'renderer', 'hardware', ['software', 'hardware'],
+    'renderer', DEFAULT_RENDERER, ['software', 'hardware'],
     'DMLab renderer. Make sure you have GPU if you use '
     '"hardware".')
 
