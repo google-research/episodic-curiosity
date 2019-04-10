@@ -37,10 +37,13 @@ from third_party.baselines.common.vec_env import threaded_vec_env
 from third_party.keras_resnet import models
 import gin
 
+DEFAULT_VEC_ENV_CLASS_NAME = 'SubprocVecEnv'
 
-flags.DEFINE_string('vec_env_class', 'SubprocVecEnv',
-                    'Vec env class to use. '
-                    '"SubprocVecEnv", "ThreadedVecEnv" are supported')
+
+flags.DEFINE_enum('vec_env_class',
+                  DEFAULT_VEC_ENV_CLASS_NAME,
+                  ['SubprocVecEnv', 'ThreadedVecEnv'],
+                  'Vec env class to use. ')
 
 FLAGS = flags.FLAGS
 
