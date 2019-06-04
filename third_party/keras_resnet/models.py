@@ -363,3 +363,4 @@ class ResnetBuilder(object):
 
     output = similarity_network([y1, y2])
     return Model(inputs=[x1, x2], outputs=output), branch, similarity_network
+

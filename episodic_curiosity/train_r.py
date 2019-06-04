@@ -31,6 +31,7 @@ from episodic_curiosity import keras_checkpoint
 from episodic_curiosity import utils
 from episodic_curiosity.constants import Const
 from third_party.keras_resnet import models
+import gin
 import tensorflow as tf
 from tensorflow import keras
 
@@ -101,6 +102,11 @@ flags.DEFINE_integer(
     'Only used together with --training_data_glob. If '
     'positive, the given percentage of input files will be '
     'reserved for validation')
+flags.DEFINE_multi_string(
+    'gin_files', [], 'List of paths to gin configuration files.')
+flags.DEFINE_multi_string(
+    'gin_bindings', [],
+    'Gin bindings to override the values set in the config files.')
 
 XmSeries = collections.namedtuple('XmSeries',
                                   ['loss', 'val_loss', 'acc', 'val_acc'])
@@ -371,6 +377,9 @@ class RTrainer(object):
 def main(unused_argv):
   if not tf.gfile.Exists(FLAGS.workdir):
     tf.gfile.MakeDirs(FLAGS.workdir)
+
+  gin.parse_config_files_and_bindings(FLAGS.gin_files,
+                                      FLAGS.gin_bindings)
 
   series_dict = {}
   for metric in XmSeries._fields:
