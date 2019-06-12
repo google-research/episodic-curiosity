@@ -337,7 +337,7 @@ def build_one_trajectory(episode_i=0, xm_series=None):
   # One action for each time step.
   saved_actions = []
   if FLAGS.trajectory_mode == 'load':
-    with open(trajectory_filename, 'r') as trajectory_file:
+    with open(trajectory_filename, 'rb') as trajectory_file:
       saved_actions = pickle.load(trajectory_file)
 
   dones = [False] * num_envs
@@ -391,7 +391,7 @@ def build_one_trajectory(episode_i=0, xm_series=None):
       FLAGS.visualization_type,
       os.path.join(FLAGS.workdir, VIDEO_FILENAME_TEMPLATE.format(episode_i)))
   if FLAGS.trajectory_mode == 'save':
-    with open(trajectory_filename, 'w') as out_file:
+    with open(trajectory_filename, 'wb') as out_file:
       pickle.dump(saved_actions, out_file)
   env.close()
 
