@@ -123,7 +123,7 @@ is the main entry point to reproduce the results of Table 1 in the
 line launches training of the *PPO + EC* method on the *Sparse+Doors* scenario:
 
 ```sh
-python episodic_curiosity/scripts/launcher_script.py --workdir=/tmp/ec_workdir --method=ppo_plus_ec --scenarios=sparseplusdoors
+python episodic-curiosity/scripts/launcher_script.py --workdir=/tmp/ec_workdir --method=ppo_plus_ec --scenario=sparseplusdoors
 ```
 
 Main flags:
