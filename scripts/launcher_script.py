@@ -31,6 +31,7 @@ from absl import app
 from absl import flags
 
 from episodic_curiosity import constants
+import six
 import tensorflow as tf
 
 FLAGS = flags.FLAGS
@@ -85,7 +86,7 @@ def flatten_list(to_flatten):
 
 
 def quote_gin_value(v):
-  if isinstance(v, unicode) or isinstance(v, str):
+  if isinstance(v, six.string_types):
     return '"{}"'.format(v)
   return v
 
