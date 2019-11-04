@@ -23,6 +23,7 @@ from episodic_curiosity import curiosity_evaluation
 from episodic_curiosity.environments import fake_gym_env
 import numpy as np
 import tensorflow as tf
+from tensorflow.contrib import layers as contrib_layers
 
 
 def random_policy(unused_observation):
@@ -67,15 +68,11 @@ class CuriosityEvaluationTest(tf.test.TestCase):
 
     # Logits to select the action.
     num_actions = 7
-    h = tf.contrib.layers.fully_connected(
-        inputs=x_downscaled,
-        num_outputs=32,
-        activation_fn=None, scope='fc0')
+    h = contrib_layers.fully_connected(
+        inputs=x_downscaled, num_outputs=32, activation_fn=None, scope='fc0')
     h = tf.nn.relu(h)
-    y_logits = tf.contrib.layers.fully_connected(
-        inputs=h,
-        num_outputs=num_actions,
-        activation_fn=None, scope='fc1')
+    y_logits = contrib_layers.fully_connected(
+        inputs=h, num_outputs=num_actions, activation_fn=None, scope='fc1')
     temperature = 100.0
     y_logits /= temperature
 
