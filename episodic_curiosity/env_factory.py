@@ -34,6 +34,7 @@ from third_party.baselines.bench import Monitor
 from third_party.baselines.common import atari_wrappers
 from third_party.baselines.common.vec_env import subproc_vec_env
 from third_party.baselines.common.vec_env import threaded_vec_env
+from third_party.gym import ant_wrapper
 from third_party.keras_resnet import models
 import gin
 
