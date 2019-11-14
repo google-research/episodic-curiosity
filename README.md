@@ -70,12 +70,20 @@ bazel build -c opt python/pip_package:build_pip_package
 pip install /tmp/dmlab_pkg/DeepMind_Lab-1.0-py2-none-any.whl --force-reinstall
 ```
 
+If you wish to run Mujoco experiments (section S1 of the paper), you need to
+install dm_control and its dependencies. See [this
+documentation](https://github.com/deepmind/dm_control#requirements-and-installation),
+and replace `pip install -e .` by `pip install -e .[mujoco]` in the command
+below.
+
 Finally, install episodic curiosity and its pip dependencies:
 
 ```shell
 cd episodic-curiosity
 pip install -e .
 ```
+
+
 
 ### Resource requirements for training
 
@@ -86,6 +94,7 @@ pip install -e .
 | DMLab       | PPO + EC using already trained R-networks   | No                   | 32GBs                      |
 | DMLab       | PPO + EC with R-network training   | Yes, otherwise, training is slower by >20x.<br>Required GPU RAM: 5GBs      | 50GBs<br>Tip: reduce  `dataset_buffer_size` for  using less RAM at the expense of policy performance.   |
 | DMLab       | PPO + ECO  | Yes, otherwise, raining is slower by >20x.<br>Required GPU RAM: 5GBs     | 80GBs<br>Tip: reduce `observation_history_size` for using less RAM, at the expense of policy performance      |
+| Mujoco       | PPO + EC using already trained R-networks   | No                   | 32GBs                      |
 
 
 ## Trained models
@@ -131,7 +140,7 @@ Main flags:
 | Flag | Descriptions |
 | :----------- | :--------- |
 | --method | Solving method to use, corresponds to the rows in table 1 of the [paper](https://arxiv.org/abs/1810.02274). Possible values: `ppo, ppo_plus_ec, ppo_plus_eco, ppo_plus_grid_oracle` |
-| --scenario | Scenario to launch. Corresponds to the columns in table 1 of the [paper](https://arxiv.org/abs/1810.02274). Possible values: `noreward, norewardnofire, sparse, verysparse, sparseplusdoors, dense1, dense2` |
+| --scenario | Scenario to launch. Corresponds to the columns in table 1 of the [paper](https://arxiv.org/abs/1810.02274). Possible values: `noreward, norewardnofire, sparse, verysparse, sparseplusdoors, dense1, dense2`. `ant_no_reward` is also supported which corresponds to the first row of table S1. |
 | --workdir | Directory where logs and checkpoints will be stored.  |
 | --run_number | Run number of the current run. This is used to create an appropriate subdir in workdir.  |
 | --r_networks_path | Only meaningful for the `ppo_plus_ec` method. Path to the root dir for pre-trained r networks.  If specified, we train the policy using those pre-trained r networks. If not specified, we first generate the R network training data, train the R network and then train the policy. |
@@ -212,6 +221,4 @@ exploitation policy, complementary to the exploration policy in this work).
 
 -   As of 2019/02/20, `ppo_plus_eco` method is not robust to restarts, because
     the R-network trained online is not checkpointed.
--   This repo only covers training on Deepmind Lab. We are also considering
-    releasing the code for training on Mujoco in the future.
 

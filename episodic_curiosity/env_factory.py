@@ -197,6 +197,29 @@ def create_single_atari_env(env_name, seed, use_monitor, split=''):
   return env
 
 
+@gin.configurable
+def create_single_parkour_env(env_name,
+                              seed,
+                              use_monitor,
+                              split='',
+                              mujoco_key_path=None,
+                              run_oracle_before_monitor=False):
+  """Creates a parkour environment."""
+  del env_name  # unused
+  del split  # unused
+  print('Creating parkour env')
+  env = ant_wrapper.AntWrapper(
+      height=Const.OBSERVATION_HEIGHT,
+      width=Const.OBSERVATION_WIDTH,
+      mujoco_key_path=mujoco_key_path)
+  if run_oracle_before_monitor:
+    env = dmlab_utils.OracleRewardWrapper(env)
+
+  if use_monitor:
+    env = Monitor(
+        env,
+        logger.get_dir() and os.path.join(logger.get_dir(), str(seed)))
+  return env
 
 
 @gin.configurable
@@ -244,6 +267,11 @@ def create_environments(env_name,
   elif environment_engine == 'atari':
     create_env_fn = create_single_atari_env
     is_atari_environment = True
+  elif environment_engine == 'parkour':
+    mujoco_key_path = ''
+    create_env_fn = functools.partial(
+        create_single_parkour_env, mujoco_key_path=mujoco_key_path)
+    is_atari_environment = False
   else:
     raise ValueError('Unknown env engine {}'.format(environment_engine))
 

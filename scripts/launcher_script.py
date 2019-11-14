@@ -40,15 +40,20 @@ flags.DEFINE_string('workdir', None,
                     'Directory where all experiment results will be stored')
 flags.mark_flag_as_required('workdir')
 
-flags.DEFINE_enum('method', 'ppo_plus_eco',
-                  ['ppo', 'ppo_plus_ec', 'ppo_plus_eco',
-                   'ppo_plus_grid_oracle'],
-                  'Solving method to use. Corresponds to rows in table 1 of '
-                  'https://arxiv.org/pdf/1810.02274.pdf.')
+flags.DEFINE_enum(
+    'method', 'ppo_plus_eco',
+    ['ppo', 'ppo_plus_ec', 'ppo_plus_eco', 'ppo_plus_grid_oracle'],
+    'Solving method to use. For DMLab scenarios, this corresponds to rows in '
+    'table 1 of https://arxiv.org/pdf/1810.02274.pdf. For the Mujoco Ant '
+    'scenarios, this corresponds to the columns of table S1 (only "ppo" and '
+    '"ppo_plus_ec" are valid choices for ant scenarios).')
+
+DMLAB_SCENARIOS = ['noreward', 'norewardnofire', 'sparse', 'verysparse',
+                   'sparseplusdoors', 'dense1', 'dense2']
+MUJOCO_ANT_SCENARIOS = ['ant_no_reward']
 
 flags.DEFINE_enum('scenario', 'verysparse',
-                  ['noreward', 'norewardnofire', 'sparse', 'verysparse',
-                   'sparseplusdoors', 'dense1', 'dense2'],
+                  DMLAB_SCENARIOS + MUJOCO_ANT_SCENARIOS,
                   'Scenario to launch.')
 
 flags.DEFINE_integer('run_number',
@@ -119,6 +124,22 @@ def assemble_command(base_command, params):
 
 def get_ppo_params(scenario):
   """Returns the param for the 'ppo' method."""
+  if scenario == 'ant_no_reward':
+    return {
+        'policy_architecture': 'mlp',
+        '_gin.CuriosityEnvWrapper.scale_task_reward': 0.0,
+        '_gin.create_single_parkour_env.run_oracle_before_monitor': True,
+        '_gin.OracleExplorationReward.reward_grid_size': 5,
+        '_gin.OracleExplorationReward.cell_reward_normalizer': 25,
+        '_gin.CuriosityEnvWrapper.exploration_reward': 'none',
+        '_gin.train.ent_coef': 8e-6,
+        '_gin.train.learning_rate': 3e-4,
+        '_gin.train.nsteps': 256,
+        '_gin.train.nminibatches': 4,
+        '_gin.train.noptepochs': 10,
+        '_gin.AntWrapper.texture_mode': 'random_tiled',
+    }
+
   if scenario == 'noreward' or scenario == 'norewardnofire':
     return {
         'action_set': '' if scenario == 'noreward' else 'nofire',
@@ -144,6 +165,9 @@ def get_ppo_params(scenario):
 
 def get_ppo_plus_eco_params(scenario):
   """Returns the param for the 'ppo_plus_eco' method."""
+  assert scenario in DMLAB_SCENARIOS, (
+      'Non-DMLab scenarios not supported as of today by PPO+ECO method')
+
   if scenario == 'noreward' or scenario == 'norewardnofire':
     return {
         'action_set': '' if scenario == 'noreward' else 'nofire',
@@ -183,6 +207,8 @@ def get_ppo_plus_eco_params(scenario):
 
 def get_ppo_plus_grid_oracle_params(scenario):
   """Returns the param for the 'ppo_plus_grid_oracle' method."""
+  assert scenario in DMLAB_SCENARIOS, (
+      'Non-DMLab scenarios not supported as of today by PPO+grid oracle method')
   if scenario == 'noreward' or scenario == 'norewardnofire':
     return {
         'action_set': '' if scenario == 'noreward' else 'nofire',
@@ -257,16 +283,20 @@ def get_trained_r_net_path(scenario, r_net_workdir):
   if FLAGS.r_networks_path:
     # Use a pre-trained R-network.
     assert r_net_workdir is None
-    level = constants.Const.find_level_by_scenario(scenario)
-    if 'explore_obstructed_goals_large' in level.fully_qualified_name:
-      r_network = 'explore_obstructed_goals_large/r_network_weights.01950.h5'
-    elif 'rooms_keys_doors_puzzle' in level.fully_qualified_name:
-      r_network = 'rooms_keys_doors_puzzle/r_network_weights.01350.h5'
-    elif 'rooms_collect_good_objects_train' in level.fully_qualified_name:
-      r_network = ('rooms_collect_good_objects_train/'
-                   'r_network_weights.02010.h5')
+    if scenario in MUJOCO_ANT_SCENARIOS:
+      r_network = 'mujoco_ant/r_network_weights.01980.h5'
     else:
-      r_network = 'explore_goal_locations_large/r_network_weights.01860.h5'
+      assert scenario in DMLAB_SCENARIOS
+      level = constants.Const.find_level_by_scenario(scenario)
+      if 'explore_obstructed_goals_large' in level.fully_qualified_name:
+        r_network = 'explore_obstructed_goals_large/r_network_weights.01950.h5'
+      elif 'rooms_keys_doors_puzzle' in level.fully_qualified_name:
+        r_network = 'rooms_keys_doors_puzzle/r_network_weights.01350.h5'
+      elif 'rooms_collect_good_objects_train' in level.fully_qualified_name:
+        r_network = ('rooms_collect_good_objects_train/'
+                     'r_network_weights.02010.h5')
+      else:
+        r_network = 'explore_goal_locations_large/r_network_weights.01860.h5'
     return os.path.join(FLAGS.r_networks_path, r_network)
 
   assert r_net_workdir is not None
@@ -282,6 +312,29 @@ def get_trained_r_net_path(scenario, r_net_workdir):
 
 def get_ppo_plus_ec_params(scenario, r_network_path):
   """Returns the param for the 'ppo_plus_ec' method."""
+  if scenario == 'ant_no_reward':
+    return {
+        'policy_architecture': 'mlp',
+        '_gin.CuriosityEnvWrapper.scale_task_reward': 0.0,
+        '_gin.create_single_parkour_env.run_oracle_before_monitor': True,
+        '_gin.OracleExplorationReward.reward_grid_size': 5,
+        '_gin.OracleExplorationReward.cell_reward_normalizer': 25,
+        '_gin.CuriosityEnvWrapper.exploration_reward': 'episodic_curiosity',
+        '_gin.EpisodicMemory.capacity': 1000,
+        '_gin.EpisodicMemory.replacement': 'random',
+        '_gin.similarity_to_memory.similarity_aggregation': 'nth_largest',
+        '_gin.CuriosityEnvWrapper.similarity_threshold': 1.0,
+        '_gin.train.nsteps': 256,
+        '_gin.train.nminibatches': 4,
+        '_gin.train.noptepochs': 10,
+        '_gin.CuriosityEnvWrapper.bonus_reward_additive_term': 0.5,
+        'r_checkpoint': r_network_path,
+        '_gin.AntWrapper.texture_mode': 'random_tiled',
+        '_gin.CuriosityEnvWrapper.scale_surrogate_reward': 1.0,
+        '_gin.train.ent_coef': 2.23872113857e-05,
+        '_gin.train.learning_rate': 7.49894209332e-05,
+    }
+
   if scenario == 'noreward' or scenario == 'norewardnofire':
     return {
         'r_checkpoint': r_network_path,
@@ -339,6 +392,9 @@ def run_training():
 
   r_net_workdir = None
   if FLAGS.method == 'ppo_plus_ec' and not FLAGS.r_networks_path:
+    assert FLAGS.scenario in DMLAB_SCENARIOS, (
+        'As of today, the code does not support R-network training for '
+        'non-DMLab scenarios. You can use provided checkpoints instead.')
     r_net_workdir = run_r_net_training(workdir)
 
   if FLAGS.method == 'ppo_plus_eco':
@@ -355,11 +411,17 @@ def run_training():
     raise NotImplementedError(
         'method {} is not implemented.'.format(FLAGS.method))
 
+  if FLAGS.scenario in DMLAB_SCENARIOS:
+    env_name = ('dmlab:' + constants.Const.find_level_by_scenario(
+        FLAGS.scenario).fully_qualified_name)
+  else:
+    assert FLAGS.scenario in MUJOCO_ANT_SCENARIOS, FLAGS.scenario
+    env_name = 'parkour:'
+
   policy_training_params.update({
       'workdir': workdir,
       'num_env': str(FLAGS.num_env),
-      'env_name': ('dmlab:' + constants.Const.find_level_by_scenario(
-          FLAGS.scenario).fully_qualified_name),
+      'env_name': env_name,
       'num_timesteps': str(FLAGS.num_timesteps)})
   print('Params for scenario', FLAGS.scenario, ':\n', policy_training_params)
   tf.gfile.MakeDirs(workdir)

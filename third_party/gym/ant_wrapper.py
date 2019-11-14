@@ -66,6 +66,22 @@ flags.DEFINE_string('asset_path', '',
                     'Path to assets (images, walker definitions).')
 
 
+# Number of actions for the ant mujoco model.
+_NUM_ANT_ACTIONS = 8
+# Number of observation points for the ant mujoco model.
+_ANT_OBS_DIM = 27
+# Min/max ids of textures.
+MIN_TEXTURE_ID = 1
+MAX_TEXTURE_ID = 190
+
+# Size of each tile (in pixels). Used when texture_mode='random_tiled' is used.
+TILED_IMG_SIZE = 100
+# Floor size in environment units. Used when random_start_position=True.
+FLOOR_SIZE_IN_ENV = 200
+
+
+
+
 # We cache the decoded images in memory, so that we don't have to re-read and
 # resize tens of large images at each episode. This is a module function so that
 # the cache is shared, for efficiency.

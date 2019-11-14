@@ -58,6 +58,13 @@ setuptools.setup(
     install_requires=install_requires,
     extras_require={
         'video': ['sk-video'],
+        'mujoco': [
+            # For installation of dm_control see:
+            # https://github.com/deepmind/dm_control#requirements-and-installation.
+            'dm_control',
+            'functools32',
+            'scikit-image',
+        ],
     },
     license='Apache 2.0',
     keywords='reinforcement-learning curiosity exploration deepmind-lab',
