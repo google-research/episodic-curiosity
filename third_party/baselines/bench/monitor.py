@@ -1,13 +1,17 @@
 # coding=utf-8
 __all__ = ['Monitor', 'get_monitor_files', 'load_results']
 
+import csv
+import json
+import os
+import os.path as osp
+import time
+import uuid
+from glob import glob
+
 import gym
 from gym.core import Wrapper
-import time
-from glob import glob
-import csv
-import os.path as osp
-import json
+import pandas
 import numpy as np
 
 class Monitor(Wrapper):
