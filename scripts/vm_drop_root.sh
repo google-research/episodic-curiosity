@@ -28,7 +28,7 @@ PRETRAINED_R_NETS_PATH=$(curl "http://metadata.google.internal/computeMetadata/v
 
 if [[ "${PRETRAINED_R_NETS_PATH}" ]]
 then
-  gsutil -m cp -r "${PRETRAINED_R_NETS_PATH}" "/home/${USER}"
+  gcloud storage cp --recursive "${PRETRAINED_R_NETS_PATH}" "/home/${USER}"
 fi
 
 chmod a+x "${EPISODIC_CURIOSITY_DIR}/scripts/vm_start.sh"
