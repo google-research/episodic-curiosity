@@ -17,7 +17,7 @@
 
 We only use standard python deps so that this script can be executed in any
 setup.
-This script repeatedly calls the 'gsutil rsync' command.
+This script repeatedly calls the 'gcloud storage rsync' command.
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -37,9 +37,9 @@ FLAGS = parser.parse_args()
 
 
 def sync_to_cloud_bucket():
-  """Repeatedly syncs a path to a cloud bucket using gsutil."""
+  """Repeatedly syncs a path to a cloud bucket using gcloud storage."""
   sync_cmd = (
-      'gsutil -m rsync -r {src} {dst}'.format(
+      'gcloud storage rsync --recursive {src} {dst}'.format(
           src=os.path.expanduser(FLAGS.workdir),
           dst=os.path.join(
               FLAGS.sync_to_cloud_bucket, os.path.basename(FLAGS.workdir))))

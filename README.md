@@ -106,8 +106,8 @@ or copy them with the `gsutil` command from the
 [Google Cloud SDK](https://cloud.google.com/sdk):
 
 ```shell
-gsutil -m cp -r gs://episodic-curiosity/r_networks .
-gsutil -m cp -r gs://episodic-curiosity/policies .
+gcloud storage cp --recursive gs://episodic-curiosity/r_networks .
+gcloud storage cp --recursive gs://episodic-curiosity/policies .
 ```
 
 Example of command to visualize a trained policy with two episodes of
@@ -221,4 +221,3 @@ exploitation policy, complementary to the exploration policy in this work).
 
 -   As of 2019/02/20, `ppo_plus_eco` method is not robust to restarts, because
     the R-network trained online is not checkpointed.
-
